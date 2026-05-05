@@ -1,1 +1,172 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FurryHub | Novabeast Den</title>
+    <style>
+        :root {
+            --primary: #ff8c00;
+            --bg-dark: #121212;
+            --bg-card: #1e1e1e;
+            --text-main: #e0e0e0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Navigation */
+        nav {
+            background-color: #000;
+            padding: 1rem 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            margin-left: 20px;
+        }
+
+        /* Gallery Section */
+        .container {
+            padding: 40px 5%;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+        }
+
+        /* Image Cards */
+        .card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+            border: 1px solid #333;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            border-color: var(--primary);
+        }
+
+        .card img {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .card-details {
+            padding: 15px;
+        }
+
+        .card-title {
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: var(--primary);
+        }
+
+        /* Loading State */
+        #loading-msg {
+            text-align: center;
+            font-style: italic;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <a href="index.html" class="logo">FURRYHUB</a>
+        <div class="nav-links">
+            <a href="index.html">Home</a>
+            <a href="#">Upload</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header>
+            <h1>Novabeast Gallery</h1>
+            <p>Exploring the digital frontier of Novabeast avatars and art.</p>
+        </header>
+
+        <div id="loading-msg">Connecting to Firestore...</div>
+        <div class="gallery-grid" id="novabeast-gallery">
+            </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // Replace with your actual Firebase config from the console
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        async function loadNovabeasts() {
+            const galleryElement = document.getElementById('novabeast-gallery');
+            const loadingMsg = document.getElementById('loading-msg');
+
+            try {
+                // This looks for a collection named "novabeasts" in your database
+                const querySnapshot = await getDocs(collection(db, "novabeasts"));
+                
+                loadingMsg.style.display = 'none';
+
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerHTML = `
+                        <img src="${data.imageUrl}" alt="Novabeast Art">
+                        <div class="card-details">
+                            <div class="card-title">${data.name || 'Untitled Novabeast'}</div>
+                        </div>
+                    `;
+                    galleryElement.appendChild(card);
+                });
+            } catch (error) {
+                console.error("Error loading images: ", error);
+                loadingMsg.innerText = "Error loading images. Check your Firebase Rules.";
+            }
+        }
+
+        loadNovabeasts();
+    </script>
+</body>
+</html>
