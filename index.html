@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FurryHub | Creative Community</title>
+    
+    <link rel="icon" type="image/png" href="furryhub.png">
+
     <style>
         :root {
             --primary: #ff8c00;
@@ -63,7 +66,7 @@
         }
 
         .logout-trigger {
-            color: #ff4444; /* Red hint for logout */
+            color: #ff4444;
         }
 
         /* Hero Section */
@@ -215,7 +218,6 @@
             measurementId: "G-D4QRXPJ6DP"
         };
 
-        // Init Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const provider = new GoogleAuthProvider();
@@ -225,14 +227,10 @@
         const logoutBtn = document.getElementById("logoutBtn");
         const userGreeting = document.getElementById("userGreeting");
 
-        // Show Modal
         loginBtn.onclick = () => loginModal.style.display = "flex";
-
-        // Hide Modal
         document.getElementById("closeLogin").onclick = () => loginModal.style.display = "none";
         window.onclick = (e) => { if(e.target == loginModal) loginModal.style.display = "none"; }
 
-        // Login Logic
         document.getElementById("googleSignIn").onclick = async () => {
             try {
                 await signInWithPopup(auth, provider);
@@ -242,7 +240,6 @@
             }
         };
 
-        // Logout Logic
         logoutBtn.onclick = async () => {
             try {
                 await signOut(auth);
@@ -252,16 +249,13 @@
             }
         };
 
-        // Auth State Observer
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                // User is signed in
                 loginBtn.style.display = "none";
                 userGreeting.style.display = "inline";
                 logoutBtn.style.display = "inline";
                 userGreeting.innerText = "Hey, " + user.displayName.split(' ')[0] + "!";
             } else {
-                // User is signed out
                 loginBtn.style.display = "inline";
                 userGreeting.style.display = "none";
                 logoutBtn.style.display = "none";
