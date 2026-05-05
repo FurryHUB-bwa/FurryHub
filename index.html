@@ -40,14 +40,24 @@
             letter-spacing: 1px;
         }
 
-        .nav-links a {
+        .nav-links {
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-links a, .login-trigger {
             color: white;
             text-decoration: none;
             margin-left: 20px;
             transition: color 0.3s;
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-size: 1rem;
+            font-family: inherit;
         }
 
-        .nav-links a:hover {
+        .nav-links a:hover, .login-trigger:hover {
             color: var(--primary);
         }
 
@@ -97,8 +107,57 @@
             box-shadow: 0 6px 20px rgba(255, 140, 0, 0.5);
         }
 
-        .nova-btn:active {
-            transform: translateY(0);
+        /* MODAL STYLES */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: var(--bg-card);
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            border: 2px solid var(--primary);
+            min-width: 320px;
+            position: relative;
+        }
+
+        .google-btn {
+            background-color: white;
+            color: #757575;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px auto 0;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .google-btn img {
+            width: 20px;
+            margin-right: 10px;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            color: #fff;
+            font-size: 30px;
+            cursor: pointer;
         }
     </style>
 </head>
@@ -107,10 +166,11 @@
     <nav>
         <div class="logo">FURRYHUB</div>
         <div class="nav-links">
-            <a href="#">Gallery</a>
+            <a href="novabeast.html">Gallery</a>
             <a href="#">Artists</a>
             <a href="#">Forums</a>
-            <a href="#">Login</a>
+            <button class="login-trigger" id="loginBtn">Login</button>
+            <span id="userGreeting" style="margin-left: 20px; color: var(--primary); display: none;"></span>
         </div>
     </nav>
 
@@ -122,6 +182,71 @@
     <div class="container">
         <a href="novabeast.html" class="nova-btn">Novabeast</a>
     </div>
+
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" id="closeLogin">&times;</span>
+            <h2 style="color: var(--primary); margin-top: 0;">Login</h2>
+            <p>Sign in to access all features</p>
+            <button class="google-btn" id="googleSignIn">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+                Sign in with Google
+            </button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBa-9QIAo7l9mKud-n6VwQt9b_mCZGrolA",
+            authDomain: "furryhub-490aa.firebaseapp.com",
+            projectId: "furryhub-490aa",
+            storageBucket: "furryhub-490aa.firebasestorage.app",
+            messagingSenderId: "302089297923",
+            appId: "1:302089297923:web:e3e41b2f4f1537ab54ee36",
+            measurementId: "G-D4QRXPJ6DP"
+        };
+
+        // Init Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+
+        const loginModal = document.getElementById("loginModal");
+        const loginBtn = document.getElementById("loginBtn");
+        const userGreeting = document.getElementById("userGreeting");
+
+        // Show Modal
+        loginBtn.onclick = () => loginModal.style.display = "flex";
+
+        // Hide Modal
+        document.getElementById("closeLogin").onclick = () => loginModal.style.display = "none";
+        window.onclick = (e) => { if(e.target == loginModal) loginModal.style.display = "none"; }
+
+        // Login Logic
+        document.getElementById("googleSignIn").onclick = async () => {
+            try {
+                await signInWithPopup(auth, provider);
+                loginModal.style.display = "none";
+            } catch (error) {
+                alert("Error: " + error.message);
+            }
+        };
+
+        // Check if user is already logged in
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                loginBtn.style.display = "none";
+                userGreeting.style.display = "inline";
+                userGreeting.innerText = "Hey, " + user.displayName.split(' ')[0] + "!";
+            } else {
+                loginBtn.style.display = "inline";
+                userGreeting.style.display = "none";
+            }
+        });
+    </script>
 
 </body>
 </html>
