@@ -130,7 +130,6 @@
             position: relative;
         }
 
-        /* Form Styles */
         .upload-form {
             display: flex;
             flex-direction: column;
@@ -156,8 +155,15 @@
             cursor: pointer;
         }
 
-        .submit-btn:hover {
-            background: #ffa500;
+        .logout-btn {
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            margin-top: 20px;
+            cursor: pointer;
+            font-weight: bold;
         }
 
         .google-btn {
@@ -174,12 +180,6 @@
             cursor: pointer;
         }
 
-        .modal img.zoom-view {
-            max-width: 90%;
-            max-height: 80%;
-            border-radius: 8px;
-        }
-
         .close-modal {
             position: absolute;
             top: 20px;
@@ -188,12 +188,6 @@
             font-size: 40px;
             font-weight: bold;
             cursor: pointer;
-        }
-
-        #loading-msg {
-            text-align: center;
-            font-style: italic;
-            color: #888;
         }
     </style>
 </head>
@@ -214,25 +208,34 @@
             <p>Exploring the digital frontier of Novabeast avatars and art.</p>
         </header>
 
-        <div id="loading-msg">Connecting to FurryHub Database...</div>
+        <div id="loading-msg" style="text-align: center; color: #888;">Connecting to Database...</div>
         <div class="gallery-grid" id="novabeast-gallery"></div>
     </div>
 
     <div id="imageModal" class="modal">
         <span class="close-modal" onclick="closeModals()">&times;</span>
-        <img id="modalImg" class="zoom-view" src="" alt="Zoomed view">
+        <img id="modalImg" style="max-width:90%; max-height:80%; border-radius:8px;" src="" alt="Zoomed view">
         <div id="caption" style="color: var(--primary); margin-top:15px; font-weight:bold;"></div>
     </div>
 
     <div id="loginModal" class="modal">
         <div class="modal-content">
             <span class="close-modal" onclick="closeModals()">&times;</span>
-            <h2 style="color: var(--primary); margin-top: 0;">Account Login</h2>
-            <p>Join the FurryHub community</p>
-            <button class="google-btn" id="googleSignIn">
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
-                Sign in with Google
-            </button>
+            
+            <div id="loggedOutUI">
+                <h2 style="color: var(--primary); margin-top: 0;">Account Login</h2>
+                <p>Join the FurryHub community</p>
+                <button class="google-btn" id="googleSignIn">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style="width:20px; margin-right:10px;">
+                    Sign in with Google
+                </button>
+            </div>
+
+            <div id="loggedInUI" style="display: none;">
+                <h2 style="color: var(--primary); margin-top: 0;">User Account</h2>
+                <p id="userEmail" style="color: #888;"></p>
+                <button class="logout-btn" id="btnLogOut">Log Out</button>
+            </div>
         </div>
     </div>
 
@@ -251,7 +254,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBa-9QIAo7l9mKud-n6VwQt9b_mCZGrolA",
@@ -271,92 +274,96 @@
         let currentUser = null;
 
         // UI Selectors
-        const imgModal = document.getElementById("imageModal");
         const loginModal = document.getElementById("loginModal");
-        const uploadModal = document.getElementById("uploadModal");
-        const btnLogin = document.getElementById("openLogin");
+        const loggedOutUI = document.getElementById("loggedOutUI");
+        const loggedInUI = document.getElementById("loggedInUI");
+        const userEmailText = document.getElementById("userEmail");
+        const btnLoginNav = document.getElementById("openLogin");
 
-        // Auth Tracker
+        // Auth Tracker logic
         onAuthStateChanged(auth, (user) => {
             currentUser = user;
             if (user) {
-                btnLogin.innerText = user.displayName.split(' ')[0];
+                btnLoginNav.innerText = user.displayName.split(' ')[0];
+                loggedOutUI.style.display = "none";
+                loggedInUI.style.display = "block";
+                userEmailText.innerText = user.email;
             } else {
-                btnLogin.innerText = "Login";
+                btnLoginNav.innerText = "Login";
+                loggedOutUI.style.display = "block";
+                loggedInUI.style.display = "none";
             }
         });
 
-        // Open Upload (Requires Login)
+        // Logout logic
+        document.getElementById("btnLogOut").onclick = async () => {
+            try {
+                await signOut(auth);
+                alert("Logged out successfully!");
+                closeModals();
+            } catch (e) {
+                alert("Error logging out");
+            }
+        };
+
+        // Open/Close Modals
+        btnLoginNav.onclick = () => loginModal.style.display = "flex";
+        
+        window.closeModals = () => {
+            document.querySelectorAll('.modal').forEach(m => m.style.display = "none");
+        };
+
+        // Standard Sign In
+        document.getElementById("googleSignIn").onclick = async () => {
+            try { await signInWithPopup(auth, provider); closeModals(); }
+            catch (e) { alert("Login failed"); }
+        };
+
+        // Upload Logic
         document.getElementById("btnUpload").onclick = () => {
             if (!currentUser) {
                 alert("Please login first to upload!");
                 loginModal.style.display = "flex";
             } else {
-                uploadModal.style.display = "flex";
+                document.getElementById("uploadModal").style.display = "flex";
             }
         };
 
-        // Handle Form Submission
         document.getElementById("uploadForm").onsubmit = async (e) => {
             e.preventDefault();
-            const name = document.getElementById("newName").value;
-            const imageUrl = document.getElementById("newUrl").value;
-
             try {
                 await addDoc(collection(db, "novabeasts"), {
-                    name: name,
-                    imageUrl: imageUrl,
+                    name: document.getElementById("newName").value,
+                    imageUrl: document.getElementById("newUrl").value,
                     uploadedBy: currentUser.uid,
                     timestamp: new Date()
                 });
-                alert("Upload Successful!");
-                location.reload(); // Refresh to see new post
-            } catch (err) {
-                console.error(err);
-                alert("Error uploading. Check Firestore Rules!");
-            }
+                location.reload();
+            } catch (err) { alert("Error uploading"); }
         };
 
-        // --- Standard Logic ---
-        document.getElementById("openLogin").onclick = () => loginModal.style.display = "flex";
-        document.getElementById("googleSignIn").onclick = async () => {
-            try { await signInWithPopup(auth, provider); loginModal.style.display = "none"; }
-            catch (e) { alert("Login failed"); }
-        };
-
-        window.openImage = (url, name) => {
-            imgModal.style.display = "flex";
-            document.getElementById("modalImg").src = url;
-            document.getElementById("caption").innerText = name;
-        };
-
-        window.closeModals = () => {
-            imgModal.style.display = "none";
-            loginModal.style.display = "none";
-            uploadModal.style.display = "none";
-        };
-
-        window.onclick = (e) => {
-            if ([imgModal, loginModal, uploadModal].includes(e.target)) closeModals();
-        };
-
+        // Load Gallery
         async function loadNovabeasts() {
             const galleryElement = document.getElementById('novabeast-gallery');
-            const loadingMsg = document.getElementById('loading-msg');
-            try {
-                const querySnapshot = await getDocs(collection(db, "novabeasts"));
-                loadingMsg.style.display = 'none';
-                querySnapshot.forEach((doc) => {
-                    const data = doc.data();
-                    const card = document.createElement('div');
-                    card.className = 'card';
-                    card.onclick = () => openImage(data.imageUrl, data.name);
-                    card.innerHTML = `<img src="${data.imageUrl}"><div class="card-details"><div class="card-title">${data.name || 'Untitled'}</div></div>`;
-                    galleryElement.appendChild(card);
-                });
-            } catch (e) { loadingMsg.innerText = "Error loading data."; }
+            const querySnapshot = await getDocs(collection(db, "novabeasts"));
+            document.getElementById('loading-msg').style.display = 'none';
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `<img src="${data.imageUrl}"><div class="card-details"><div class="card-title">${data.name || 'Untitled'}</div></div>`;
+                card.onclick = () => {
+                    document.getElementById("imageModal").style.display = "flex";
+                    document.getElementById("modalImg").src = data.imageUrl;
+                    document.getElementById("caption").innerText = data.name;
+                };
+                galleryElement.appendChild(card);
+            });
         }
         loadNovabeasts();
+
+        // Close on outside click
+        window.onclick = (e) => { if(e.target.classList.contains('modal')) closeModals(); };
     </script>
 </body>
 </html>
