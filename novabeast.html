@@ -39,10 +39,24 @@
             text-decoration: none;
         }
 
-        .nav-links a {
+        .nav-links {
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-links a, .login-trigger {
             color: white;
             text-decoration: none;
             margin-left: 20px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+
+        .nav-links a:hover, .login-trigger:hover {
+            color: var(--primary);
         }
 
         .container {
@@ -66,7 +80,7 @@
             overflow: hidden;
             transition: transform 0.3s ease;
             border: 1px solid #333;
-            cursor: pointer; /* Makes it clear it's clickable */
+            cursor: pointer;
         }
 
         .card:hover {
@@ -91,9 +105,9 @@
             color: var(--primary);
         }
 
-        /* LIGHTBOX / MODAL STYLES */
+        /* MODALS (Image & Login) */
         .modal {
-            display: none; /* Hidden by default */
+            display: none;
             position: fixed;
             z-index: 1000;
             left: 0;
@@ -104,22 +118,45 @@
             justify-content: center;
             align-items: center;
             flex-direction: column;
-            cursor: zoom-out;
         }
 
-        .modal img {
+        .modal-content {
+            background: var(--bg-card);
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            border: 2px solid var(--primary);
+            min-width: 300px;
+        }
+
+        .google-btn {
+            background-color: white;
+            color: #757575;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px auto 0;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .google-btn:hover {
+            background-color: #f1f1f1;
+        }
+
+        .google-btn img {
+            width: 20px;
+            margin-right: 10px;
+        }
+
+        .modal img.zoom-view {
             max-width: 90%;
             max-height: 80%;
             border-radius: 8px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            cursor: default;
-        }
-
-        .modal-caption {
-            color: var(--primary);
-            margin-top: 15px;
-            font-size: 1.5rem;
-            font-weight: bold;
         }
 
         .close-modal {
@@ -146,6 +183,7 @@
         <div class="nav-links">
             <a href="index.html">Home</a>
             <a href="#">Upload</a>
+            <button class="login-trigger" id="openLogin">Login</button>
         </div>
     </nav>
 
@@ -160,14 +198,27 @@
     </div>
 
     <div id="imageModal" class="modal">
-        <span class="close-modal">&times;</span>
-        <img id="modalImg" src="" alt="Zoomed view">
-        <div id="caption" class="modal-caption"></div>
+        <span class="close-modal" onclick="closeModals()">&times;</span>
+        <img id="modalImg" class="zoom-view" src="" alt="Zoomed view">
+        <div id="caption" style="color: var(--primary); margin-top:15px; font-weight:bold;"></div>
+    </div>
+
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModals()">&times;</span>
+            <h2 style="color: var(--primary); margin-top: 0;">Account Login</h2>
+            <p>Join the FurryHub community</p>
+            <button class="google-btn" id="googleSignIn">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+                Sign in with Google
+            </button>
+        </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBa-9QIAo7l9mKud-n6VwQt9b_mCZGrolA",
@@ -181,59 +232,74 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
 
-        // Modal Elements
-        const modal = document.getElementById("imageModal");
-        const modalImg = document.getElementById("modalImg");
-        const captionText = document.getElementById("caption");
+        // UI Element Selectors
+        const imgModal = document.getElementById("imageModal");
+        const loginModal = document.getElementById("loginModal");
 
-        // Function to open modal
-        function openImage(url, name) {
-            modal.style.display = "flex";
-            modalImg.src = url;
-            captionText.innerHTML = name;
-        }
+        // Open Login Modal
+        document.getElementById("openLogin").onclick = () => {
+            loginModal.style.display = "flex";
+        };
 
-        // Close modal when clicking 'X' or background
-        modal.onclick = () => { modal.style.display = "none"; }
+        // Google Sign In Logic
+        document.getElementById("googleSignIn").onclick = async () => {
+            try {
+                const result = await signInWithPopup(auth, provider);
+                alert("Welcome, " + result.user.displayName + "!");
+                loginModal.style.display = "none";
+            } catch (error) {
+                console.error(error);
+                alert("Login failed: " + error.message);
+            }
+        };
 
+        // Gallery Image Zoom Logic
+        window.openImage = (url, name) => {
+            imgModal.style.display = "flex";
+            document.getElementById("modalImg").src = url;
+            document.getElementById("caption").innerText = name;
+        };
+
+        // Close functions
+        window.closeModals = () => {
+            imgModal.style.display = "none";
+            loginModal.style.display = "none";
+        };
+
+        // Close on background click
+        window.onclick = (event) => {
+            if (event.target == imgModal || event.target == loginModal) {
+                closeModals();
+            }
+        };
+
+        // Load Gallery
         async function loadNovabeasts() {
             const galleryElement = document.getElementById('novabeast-gallery');
             const loadingMsg = document.getElementById('loading-msg');
-
             try {
                 const querySnapshot = await getDocs(collection(db, "novabeasts"));
                 loadingMsg.style.display = 'none';
-
-                if (querySnapshot.empty) {
-                    loadingMsg.style.display = 'block';
-                    loadingMsg.innerText = "No Novabeasts found. Add some in the Firebase Console!";
-                    return;
-                }
-
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
-                    
                     const card = document.createElement('div');
                     card.className = 'card';
+                    card.onclick = () => openImage(data.imageUrl, data.name);
                     card.innerHTML = `
-                        <img src="${data.imageUrl}" alt="Novabeast Art" onerror="this.src='https://via.placeholder.com/300x300?text=Image+Error'">
+                        <img src="${data.imageUrl}" alt="Art">
                         <div class="card-details">
-                            <div class="card-title">${data.name || 'Untitled Novabeast'}</div>
+                            <div class="card-title">${data.name || 'Untitled'}</div>
                         </div>
                     `;
-
-                    // Add click event to card to trigger the zoom
-                    card.onclick = () => openImage(data.imageUrl, data.name || 'Untitled Novabeast');
-                    
                     galleryElement.appendChild(card);
                 });
             } catch (error) {
-                console.error("Error loading images: ", error);
-                loadingMsg.innerText = "Error: Check your Firestore 'Rules' tab.";
+                loadingMsg.innerText = "Error loading data.";
             }
         }
-
         loadNovabeasts();
     </script>
 </body>
