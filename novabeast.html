@@ -27,6 +27,9 @@
             justify-content: space-between;
             align-items: center;
             border-bottom: 2px solid var(--primary);
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
 
         .logo {
@@ -63,6 +66,7 @@
             overflow: hidden;
             transition: transform 0.3s ease;
             border: 1px solid #333;
+            cursor: pointer; /* Makes it clear it's clickable */
         }
 
         .card:hover {
@@ -85,6 +89,47 @@
             font-weight: bold;
             font-size: 1.1rem;
             color: var(--primary);
+        }
+
+        /* LIGHTBOX / MODAL STYLES */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            cursor: zoom-out;
+        }
+
+        .modal img {
+            max-width: 90%;
+            max-height: 80%;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            cursor: default;
+        }
+
+        .modal-caption {
+            color: var(--primary);
+            margin-top: 15px;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 35px;
+            color: #fff;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
         }
 
         #loading-msg {
@@ -114,11 +159,16 @@
         <div class="gallery-grid" id="novabeast-gallery"></div>
     </div>
 
+    <div id="imageModal" class="modal">
+        <span class="close-modal">&times;</span>
+        <img id="modalImg" src="" alt="Zoomed view">
+        <div id="caption" class="modal-caption"></div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // Your unique Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyBa-9QIAo7l9mKud-n6VwQt9b_mCZGrolA",
             authDomain: "furryhub-490aa.firebaseapp.com",
@@ -129,23 +179,35 @@
             measurementId: "G-D4QRXPJ6DP"
         };
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+
+        // Modal Elements
+        const modal = document.getElementById("imageModal");
+        const modalImg = document.getElementById("modalImg");
+        const captionText = document.getElementById("caption");
+
+        // Function to open modal
+        function openImage(url, name) {
+            modal.style.display = "flex";
+            modalImg.src = url;
+            captionText.innerHTML = name;
+        }
+
+        // Close modal when clicking 'X' or background
+        modal.onclick = () => { modal.style.display = "none"; }
 
         async function loadNovabeasts() {
             const galleryElement = document.getElementById('novabeast-gallery');
             const loadingMsg = document.getElementById('loading-msg');
 
             try {
-                // Fetching documents from your "novabeasts" collection
                 const querySnapshot = await getDocs(collection(db, "novabeasts"));
-                
                 loadingMsg.style.display = 'none';
 
                 if (querySnapshot.empty) {
                     loadingMsg.style.display = 'block';
-                    loadingMsg.innerText = "No Novabeasts found in the database. Add some in the Firebase Console!";
+                    loadingMsg.innerText = "No Novabeasts found. Add some in the Firebase Console!";
                     return;
                 }
 
@@ -160,11 +222,15 @@
                             <div class="card-title">${data.name || 'Untitled Novabeast'}</div>
                         </div>
                     `;
+
+                    // Add click event to card to trigger the zoom
+                    card.onclick = () => openImage(data.imageUrl, data.name || 'Untitled Novabeast');
+                    
                     galleryElement.appendChild(card);
                 });
             } catch (error) {
                 console.error("Error loading images: ", error);
-                loadingMsg.innerText = "Error: Check your Firestore 'Rules' tab and set them to Test Mode.";
+                loadingMsg.innerText = "Error: Check your Firestore 'Rules' tab.";
             }
         }
 
