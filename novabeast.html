@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -21,7 +20,6 @@
             padding: 0;
         }
 
-        /* Navigation */
         nav {
             background-color: #000;
             padding: 1rem 5%;
@@ -44,7 +42,6 @@
             margin-left: 20px;
         }
 
-        /* Gallery Section */
         .container {
             padding: 40px 5%;
         }
@@ -60,7 +57,6 @@
             gap: 25px;
         }
 
-        /* Image Cards */
         .card {
             background: var(--bg-card);
             border-radius: 12px;
@@ -91,7 +87,6 @@
             color: var(--primary);
         }
 
-        /* Loading State */
         #loading-msg {
             text-align: center;
             font-style: italic;
@@ -115,25 +110,26 @@
             <p>Exploring the digital frontier of Novabeast avatars and art.</p>
         </header>
 
-        <div id="loading-msg">Connecting to Firestore...</div>
-        <div class="gallery-grid" id="novabeast-gallery">
-            </div>
+        <div id="loading-msg">Connecting to FurryHub Database...</div>
+        <div class="gallery-grid" id="novabeast-gallery"></div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // Replace with your actual Firebase config from the console
+        // Your unique Firebase configuration
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT.firebaseapp.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT.appspot.com",
-            messagingSenderId: "YOUR_SENDER_ID",
-            appId: "YOUR_APP_ID"
+            apiKey: "AIzaSyBa-9QIAo7l9mKud-n6VwQt9b_mCZGrolA",
+            authDomain: "furryhub-490aa.firebaseapp.com",
+            projectId: "furryhub-490aa",
+            storageBucket: "furryhub-490aa.firebasestorage.app",
+            messagingSenderId: "302089297923",
+            appId: "1:302089297923:web:e3e41b2f4f1537ab54ee36",
+            measurementId: "G-D4QRXPJ6DP"
         };
 
+        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
@@ -142,10 +138,16 @@
             const loadingMsg = document.getElementById('loading-msg');
 
             try {
-                // This looks for a collection named "novabeasts" in your database
+                // Fetching documents from your "novabeasts" collection
                 const querySnapshot = await getDocs(collection(db, "novabeasts"));
                 
                 loadingMsg.style.display = 'none';
+
+                if (querySnapshot.empty) {
+                    loadingMsg.style.display = 'block';
+                    loadingMsg.innerText = "No Novabeasts found in the database. Add some in the Firebase Console!";
+                    return;
+                }
 
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
@@ -153,7 +155,7 @@
                     const card = document.createElement('div');
                     card.className = 'card';
                     card.innerHTML = `
-                        <img src="${data.imageUrl}" alt="Novabeast Art">
+                        <img src="${data.imageUrl}" alt="Novabeast Art" onerror="this.src='https://via.placeholder.com/300x300?text=Image+Error'">
                         <div class="card-details">
                             <div class="card-title">${data.name || 'Untitled Novabeast'}</div>
                         </div>
@@ -162,7 +164,7 @@
                 });
             } catch (error) {
                 console.error("Error loading images: ", error);
-                loadingMsg.innerText = "Error loading images. Check your Firebase Rules.";
+                loadingMsg.innerText = "Error: Check your Firestore 'Rules' tab and set them to Test Mode.";
             }
         }
 
