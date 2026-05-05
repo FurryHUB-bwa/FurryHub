@@ -44,7 +44,7 @@
             align-items: center;
         }
 
-        .nav-links a, .login-trigger {
+        .nav-links a, .login-trigger, .upload-trigger {
             color: white;
             text-decoration: none;
             margin-left: 20px;
@@ -55,7 +55,7 @@
             font-family: inherit;
         }
 
-        .nav-links a:hover, .login-trigger:hover {
+        .nav-links a:hover, .login-trigger:hover, .upload-trigger:hover {
             color: var(--primary);
         }
 
@@ -105,7 +105,7 @@
             color: var(--primary);
         }
 
-        /* MODALS (Image & Login) */
+        /* MODALS */
         .modal {
             display: none;
             position: fixed;
@@ -122,11 +122,42 @@
 
         .modal-content {
             background: var(--bg-card);
-            padding: 40px;
+            padding: 30px;
             border-radius: 15px;
             text-align: center;
             border: 2px solid var(--primary);
-            min-width: 300px;
+            min-width: 320px;
+            position: relative;
+        }
+
+        /* Form Styles */
+        .upload-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .upload-form input {
+            padding: 12px;
+            border-radius: 5px;
+            border: 1px solid #444;
+            background: #121212;
+            color: white;
+        }
+
+        .submit-btn {
+            background: var(--primary);
+            color: black;
+            border: none;
+            padding: 12px;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .submit-btn:hover {
+            background: #ffa500;
         }
 
         .google-btn {
@@ -141,16 +172,6 @@
             justify-content: center;
             margin: 20px auto 0;
             cursor: pointer;
-            transition: background 0.3s;
-        }
-
-        .google-btn:hover {
-            background-color: #f1f1f1;
-        }
-
-        .google-btn img {
-            width: 20px;
-            margin-right: 10px;
         }
 
         .modal img.zoom-view {
@@ -182,7 +203,7 @@
         <a href="index.html" class="logo">FURRYHUB</a>
         <div class="nav-links">
             <a href="index.html">Home</a>
-            <a href="#">Upload</a>
+            <button class="upload-trigger" id="btnUpload">Upload</button>
             <button class="login-trigger" id="openLogin">Login</button>
         </div>
     </nav>
@@ -215,10 +236,22 @@
         </div>
     </div>
 
+    <div id="uploadModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModals()">&times;</span>
+            <h2 style="color: var(--primary); margin-top: 0;">Upload Novabeast</h2>
+            <form class="upload-form" id="uploadForm">
+                <input type="text" id="newName" placeholder="Novabeast Name" required>
+                <input type="url" id="newUrl" placeholder="Image URL (Direct link)" required>
+                <button type="submit" class="submit-btn">Post to Gallery</button>
+            </form>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, collection, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBa-9QIAo7l9mKud-n6VwQt9b_mCZGrolA",
@@ -235,48 +268,78 @@
         const auth = getAuth(app);
         const provider = new GoogleAuthProvider();
 
-        // UI Element Selectors
+        let currentUser = null;
+
+        // UI Selectors
         const imgModal = document.getElementById("imageModal");
         const loginModal = document.getElementById("loginModal");
+        const uploadModal = document.getElementById("uploadModal");
+        const btnLogin = document.getElementById("openLogin");
 
-        // Open Login Modal
-        document.getElementById("openLogin").onclick = () => {
-            loginModal.style.display = "flex";
-        };
+        // Auth Tracker
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user) {
+                btnLogin.innerText = user.displayName.split(' ')[0];
+            } else {
+                btnLogin.innerText = "Login";
+            }
+        });
 
-        // Google Sign In Logic
-        document.getElementById("googleSignIn").onclick = async () => {
-            try {
-                const result = await signInWithPopup(auth, provider);
-                alert("Welcome, " + result.user.displayName + "!");
-                loginModal.style.display = "none";
-            } catch (error) {
-                console.error(error);
-                alert("Login failed: " + error.message);
+        // Open Upload (Requires Login)
+        document.getElementById("btnUpload").onclick = () => {
+            if (!currentUser) {
+                alert("Please login first to upload!");
+                loginModal.style.display = "flex";
+            } else {
+                uploadModal.style.display = "flex";
             }
         };
 
-        // Gallery Image Zoom Logic
+        // Handle Form Submission
+        document.getElementById("uploadForm").onsubmit = async (e) => {
+            e.preventDefault();
+            const name = document.getElementById("newName").value;
+            const imageUrl = document.getElementById("newUrl").value;
+
+            try {
+                await addDoc(collection(db, "novabeasts"), {
+                    name: name,
+                    imageUrl: imageUrl,
+                    uploadedBy: currentUser.uid,
+                    timestamp: new Date()
+                });
+                alert("Upload Successful!");
+                location.reload(); // Refresh to see new post
+            } catch (err) {
+                console.error(err);
+                alert("Error uploading. Check Firestore Rules!");
+            }
+        };
+
+        // --- Standard Logic ---
+        document.getElementById("openLogin").onclick = () => loginModal.style.display = "flex";
+        document.getElementById("googleSignIn").onclick = async () => {
+            try { await signInWithPopup(auth, provider); loginModal.style.display = "none"; }
+            catch (e) { alert("Login failed"); }
+        };
+
         window.openImage = (url, name) => {
             imgModal.style.display = "flex";
             document.getElementById("modalImg").src = url;
             document.getElementById("caption").innerText = name;
         };
 
-        // Close functions
         window.closeModals = () => {
             imgModal.style.display = "none";
             loginModal.style.display = "none";
+            uploadModal.style.display = "none";
         };
 
-        // Close on background click
-        window.onclick = (event) => {
-            if (event.target == imgModal || event.target == loginModal) {
-                closeModals();
-            }
+        window.onclick = (e) => {
+            if ([imgModal, loginModal, uploadModal].includes(e.target)) closeModals();
         };
 
-        // Load Gallery
         async function loadNovabeasts() {
             const galleryElement = document.getElementById('novabeast-gallery');
             const loadingMsg = document.getElementById('loading-msg');
@@ -288,17 +351,10 @@
                     const card = document.createElement('div');
                     card.className = 'card';
                     card.onclick = () => openImage(data.imageUrl, data.name);
-                    card.innerHTML = `
-                        <img src="${data.imageUrl}" alt="Art">
-                        <div class="card-details">
-                            <div class="card-title">${data.name || 'Untitled'}</div>
-                        </div>
-                    `;
+                    card.innerHTML = `<img src="${data.imageUrl}"><div class="card-details"><div class="card-title">${data.name || 'Untitled'}</div></div>`;
                     galleryElement.appendChild(card);
                 });
-            } catch (error) {
-                loadingMsg.innerText = "Error loading data.";
-            }
+            } catch (e) { loadingMsg.innerText = "Error loading data."; }
         }
         loadNovabeasts();
     </script>
