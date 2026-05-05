@@ -38,6 +38,7 @@
             font-weight: bold;
             color: var(--primary);
             letter-spacing: 1px;
+            text-decoration: none;
         }
 
         .nav-links {
@@ -45,7 +46,7 @@
             align-items: center;
         }
 
-        .nav-links a, .login-trigger {
+        .nav-links a, .login-trigger, .logout-trigger {
             color: white;
             text-decoration: none;
             margin-left: 20px;
@@ -57,8 +58,12 @@
             font-family: inherit;
         }
 
-        .nav-links a:hover, .login-trigger:hover {
+        .nav-links a:hover, .login-trigger:hover, .logout-trigger:hover {
             color: var(--primary);
+        }
+
+        .logout-trigger {
+            color: #ff4444; /* Red hint for logout */
         }
 
         /* Hero Section */
@@ -86,7 +91,6 @@
             text-align: center;
         }
 
-        /* Novabeast Button Styles */
         .nova-btn {
             display: inline-block;
             background-color: var(--primary);
@@ -164,13 +168,15 @@
 <body>
 
     <nav>
-        <div class="logo">FURRYHUB</div>
+        <a href="#" class="logo">FURRYHUB</a>
         <div class="nav-links">
             <a href="novabeast.html">Gallery</a>
             <a href="#">Artists</a>
             <a href="#">Forums</a>
+            
             <button class="login-trigger" id="loginBtn">Login</button>
-            <span id="userGreeting" style="margin-left: 20px; color: var(--primary); display: none;"></span>
+            <span id="userGreeting" style="margin-left: 20px; color: var(--primary); display: none; font-weight: bold;"></span>
+            <button class="logout-trigger" id="logoutBtn" style="display: none;">Logout</button>
         </div>
     </nav>
 
@@ -197,7 +203,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBa-9QIAo7l9mKud-n6VwQt9b_mCZGrolA",
@@ -216,6 +222,7 @@
 
         const loginModal = document.getElementById("loginModal");
         const loginBtn = document.getElementById("loginBtn");
+        const logoutBtn = document.getElementById("logoutBtn");
         const userGreeting = document.getElementById("userGreeting");
 
         // Show Modal
@@ -231,19 +238,33 @@
                 await signInWithPopup(auth, provider);
                 loginModal.style.display = "none";
             } catch (error) {
-                alert("Error: " + error.message);
+                alert("Login Error: " + error.message);
             }
         };
 
-        // Check if user is already logged in
+        // Logout Logic
+        logoutBtn.onclick = async () => {
+            try {
+                await signOut(auth);
+                alert("You have been logged out.");
+            } catch (error) {
+                alert("Logout Error: " + error.message);
+            }
+        };
+
+        // Auth State Observer
         onAuthStateChanged(auth, (user) => {
             if (user) {
+                // User is signed in
                 loginBtn.style.display = "none";
                 userGreeting.style.display = "inline";
+                logoutBtn.style.display = "inline";
                 userGreeting.innerText = "Hey, " + user.displayName.split(' ')[0] + "!";
             } else {
+                // User is signed out
                 loginBtn.style.display = "inline";
                 userGreeting.style.display = "none";
+                logoutBtn.style.display = "none";
             }
         });
     </script>
