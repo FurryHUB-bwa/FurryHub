@@ -13,6 +13,7 @@
             --bg-dark: #121212;
             --bg-card: #1e1e1e;
             --text-main: #e0e0e0;
+            --discord: #5865F2;
         }
 
         body {
@@ -63,6 +64,11 @@
 
         .nav-links a:hover, .login-trigger:hover, .logout-trigger:hover {
             color: var(--primary);
+        }
+
+        /* Discord specific hover color */
+        .nav-links .discord-link:hover {
+            color: var(--discord);
         }
 
         .logout-trigger {
@@ -174,6 +180,8 @@
         <a href="#" class="logo">FURRYHUB</a>
         <div class="nav-links">
             <a href="novabeast.html">Gallery</a>
+            <a href="https://discord.gg/WAUM3qQj6U" target="_blank" class="discord-link">Discord</a>
+            
             <button class="login-trigger" id="loginBtn">Login</button>
             <span id="userGreeting" style="margin-left: 20px; color: var(--primary); display: none; font-weight: bold;"></span>
             <button class="logout-trigger" id="logoutBtn" style="display: none;">Logout</button>
